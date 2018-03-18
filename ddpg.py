@@ -19,24 +19,24 @@ import timeit
 
 OU = OU()       #Ornstein-Uhlenbeck Process
 
-def playGame(train_indicator=0):    #1 means Train, 0 means simply Run
+def playGame(train_indicator=1):    #1 means Train, 0 means simply Run
     BUFFER_SIZE = 10000
-    BATCH_SIZE = 32
+    BATCH_SIZE = 64
     GAMMA = 0.99
     TAU = 0.001     #Target Network HyperParameters
     LRA = 0.0001    #Learning rate for Actor
     LRC = 0.001     #Lerning rate for Critic
 
-    action_dim = 1  #Steering/Acceleration/Brake
-    state_dim = 3  #of sensors input
+    action_dim = 4  #Steering/Acceleration/Brake
+    state_dim = 24  #of sensors input
 
     np.random.seed(1337)
 
     vision = False
 
-    EXPLORE = 1000.
-    episode_count = 1000
-    max_steps = 500
+    EXPLORE = 1000000.
+    episode_count = 100000
+    max_steps = 1600
     reward = 0
     done = False
     step = 0
@@ -55,7 +55,7 @@ def playGame(train_indicator=0):    #1 means Train, 0 means simply Run
     buff = ReplayBuffer(BUFFER_SIZE)    #Create replay buffer
 
     # Generate a Torcs environment
-    env = gym.make('Pendulum-v0')
+    env = gym.make('BipedalWalker-v2')
 
     #Now load the weight
     print("Now we load the weight")
@@ -81,7 +81,7 @@ def playGame(train_indicator=0):    #1 means Train, 0 means simply Run
         # s_t = np.hstack((ob.angle, ob.track, ob.trackPos, ob.speedX, ob.speedY,  ob.speedZ, ob.wheelSpinVel/100.0, ob.rpm))
         total_reward = 0.
         for j in range(max_steps):
-            env.render()
+            # env.render()
 
             loss = 0 
             epsilon -= 1.0 / EXPLORE
@@ -89,24 +89,28 @@ def playGame(train_indicator=0):    #1 means Train, 0 means simply Run
             noise_t = np.zeros([1,action_dim])
             
             a_t_original = actor.model.predict(s_t.reshape(1, s_t.shape[0]))
-            noise_t = train_indicator * max(epsilon, 0) * OU.function(a_t_original,  0.0, 0.60, 0.3)
-            # noise_t[0][0] = train_indicator * max(epsilon, 0) * OU.function(a_t_original[0][0],  0.0 , 0.60, 0.30)
-            # noise_t[0][1] = train_indicator * max(epsilon, 0) * OU.function(a_t_original[0][1],  0.5 , 1.00, 0.10)
-            # noise_t[0][2] = train_indicator * max(epsilon, 0) * OU.function(a_t_original[0][2], -0.1 , 1.00, 0.05)
+            # noise_t = train_indicator * max(epsilon, 0) * OU.function(a_t_original,  0.0, 0.60, 0.3)
+            # noise_t[0][0] = train_indicator * max(epsilon, 0) * OU.function(a_t_original[0][0],  0.0 , 1.00, 0.1)
+            # noise_t[0][1] = train_indicator * max(epsilon, 0) * OU.function(a_t_original[0][1],  0.0 , 1.00, 0.1)
+            # noise_t[0][2] = train_indicator * max(epsilon, 0) * OU.function(a_t_original[0][2],  0.0 , 1.00, 0.1)
+            # noise_t[0][3] = train_indicator * max(epsilon, 0) * OU.function(a_t_original[0][3],  0.0 , 1.00, 0.1)
+            noise_t[0][0] = train_indicator * max(epsilon, 0) * np.random.randn(1)
+            noise_t[0][1] = train_indicator * max(epsilon, 0) * np.random.randn(1)
+            noise_t[0][2] = train_indicator * max(epsilon, 0) * np.random.randn(1)
+            noise_t[0][3] = train_indicator * max(epsilon, 0) * np.random.randn(1)
 
             #The following code do the stochastic brake
             #if random.random() <= 0.1:
             #    print("********Now we apply the brake***********")
             #    noise_t[0][2] = train_indicator * max(epsilon, 0) * OU.function(a_t_original[0][2],  0.2 , 1.00, 0.10)
 
-            a_t = a_t_original + noise_t
-            a_t = a_t_original + noise_t
-            a_t = a_t_original + noise_t
-            # a_t[0][0] = a_t_original[0][0] + noise_t[0][0]
-            # a_t[0][1] = a_t_original[0][1] + noise_t[0][1]
-            # a_t[0][2] = a_t_original[0][2] + noise_t[0][2]
+            # a_t = a_t_original + noise_t
+            a_t[0][0] = a_t_original[0][0] + noise_t[0][0]
+            a_t[0][1] = a_t_original[0][1] + noise_t[0][1]
+            a_t[0][2] = a_t_original[0][2] + noise_t[0][2]
+            a_t[0][3] = a_t_original[0][3] + noise_t[0][3]
 
-            s_t1, r_t, done, info = env.step(a_t[0]*2.0)
+            s_t1, r_t, done, info = env.step(a_t[0])
 
             # s_t1 = np.hstack((ob.angle, ob.track, ob.trackPos, ob.speedX, ob.speedY, ob.speedZ, ob.wheelSpinVel/100.0, ob.rpm))
         

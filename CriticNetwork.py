@@ -9,9 +9,10 @@ from keras.models import Sequential, Model
 from keras.optimizers import Adam
 import keras.backend as K
 import tensorflow as tf
+from keras.layers.normalization import BatchNormalization
 
-HIDDEN1_UNITS = 30
-HIDDEN2_UNITS = 60
+HIDDEN1_UNITS = 100
+HIDDEN2_UNITS = 80
 
 class CriticNetwork(object):
     def __init__(self, sess, state_size, action_size, BATCH_SIZE, TAU, LEARNING_RATE):
@@ -44,8 +45,10 @@ class CriticNetwork(object):
 
     def create_critic_network(self, state_size,action_dim):
         print("Now we build the model")
-        S = Input(shape=[state_size])  
-        A = Input(shape=[action_dim],name='action2')   
+        S = Input(shape=[state_size])
+        # BN_S = BatchNormalization()(S)
+        A = Input(shape=[action_dim],name='action2')
+        # BN_A = BatchNormalization()(A)
         w1 = Dense(HIDDEN1_UNITS, activation='relu')(S)
         a1 = Dense(HIDDEN2_UNITS, activation='linear')(A) 
         h1 = Dense(HIDDEN2_UNITS, activation='linear')(w1)
@@ -55,4 +58,4 @@ class CriticNetwork(object):
         model = Model(input=[S,A],output=V)
         adam = Adam(lr=self.LEARNING_RATE)
         model.compile(loss='mse', optimizer=adam)
-        return model, A, S 
+        return model, A, S
